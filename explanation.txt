@@ -1,0 +1,110 @@
+Requirements:
+# Core scientific computing and visualization
+matplotlib>=3.5.0
+numpy>=1.21.0
+
+# Standard library modules (included with Python)
+# csv - Built-in CSV handling
+# random - Built-in random number generation  
+# math - Built-in mathematical functions
+
+
+Here’s a breakdown of its workflow:
+
+### 1. **Configuration and Setup**
+
+At the very top of the file, you'll find the configuration section:
+
+```python
+LEARNING_RATE = 0.01
+N_ITERATIONS = 1000
+TEST_SIZE = 0.2
+RANDOM_SEED = 42
+SHOW_PLOTS = True
+PRINT_PROGRESS_EVERY = 100
+```
+
+This allows you to easily change the model's hyperparameters (like `LEARNING_RATE`) and other settings without digging into the code. The script also defines a `Colors` class to format the terminal output, making it much more readable.
+
+### 2. **The `main()` Function: The Conductor**
+
+The entire process is orchestrated by the `main()` function at the bottom of the script. It calls other functions in a specific order to execute the ML pipeline. Let's follow its execution flow.
+
+#### **Step 1: Data Collection**
+
+```python
+print(f"\n{Colors.INFO}[1]{Colors.RESET} {Colors.BOLD}Data Collection...{Colors.RESET}")
+X, y = load_csv("MultipleLR-Dataset.csv")
+```
+
+*   It starts by calling `load_csv()`, which opens the `MultipleLR-Dataset.csv` file.
+*   It reads each row, converting the first three values into a list of features (`X`) and the fourth value into the target (`y`).
+
+#### **Step 2: Data Preprocessing**
+
+```python
+print(f"\n{Colors.INFO}[2]{Colors.RESET} {Colors.BOLD}Data Preprocessing...{Colors.RESET}")
+X_train, X_test, y_train, y_test = train_test_split(X, y)
+X_train_norm, mins, maxs = normalize_features(X_train)
+X_test_norm = [ ... ] # Normalizes the test set
+```
+
+This is a critical step that `main_simple.py` doesn't do.
+
+1.  **`train_test_split(X, y)`**: This function shuffles the dataset and splits it into two parts:
+    *   **Training Set** (80% of the data): Used to train the model.
+    *   **Testing Set** (20% of the data): Kept separate and used to evaluate the model on data it has never seen before. This tells us how well the model **generalizes**.
+
+2.  **`normalize_features(X_train)`**: This function takes the training data and scales all feature values to a range between 0 and 1. This is important because it prevents features with large values from dominating the learning process. It returns the normalized training data, along with the `mins` and `maxs` values used for scaling.
+
+3.  **Normalizing the Test Set**: The test set is then normalized using the *same* `mins` and `maxs` from the training set. This is crucial to ensure consistency.
+
+#### **Step 3: Model Training**
+
+```python
+model = train_model(X_train_norm, y_train)
+```
+
+*   The `train_model()` function creates an instance of the `LinearRegressionSGD` class and calls its `.fit()` method.
+*   The `.fit()` method is where the actual **Stochastic Gradient Descent** algorithm runs, iterating through the training data and updating the model's `weights` and `bias` to minimize the error. It also prints the training progress to the console.
+
+#### **Step 4: Model Evaluation**
+
+```python
+evaluate_model(model, X_train_norm, y_train, X_test_norm, y_test)
+```
+
+After training, the `evaluate_model()` function is called to assess the model's performance. It does this by:
+
+1.  Calculating **R-squared, MSE, and MAE** for both the **training set** and the **testing set**.
+2.  Printing a formatted summary of these metrics. Comparing the training and testing scores helps you check for **overfitting**. If the training score is much higher than the testing score, the model may have just memorized the training data.
+3.  Displaying a few sample predictions from the test set to give you a direct look at its accuracy.
+
+#### **Step 5: Model Optimization**
+
+```python
+best_lr = optimize_model(X_train_norm, y_train, X_test_norm, y_test)
+```
+
+*   The `optimize_model()` function automatically retrains the model with different learning rates (`[0.001, 0.01, 0.1]`).
+*   It checks the R² score for each learning rate and identifies which one gives the best performance on the test set. This is a simple form of **hyperparameter tuning**.
+
+#### **Step 6: Final Visualization**
+
+```python
+final_model = LinearRegressionSGD(learning_rate=best_lr)
+final_model.fit(X_train_norm, y_train)
+create_dashboard(final_model, X_train_norm, y_train, X_test_norm, y_test)
+```
+
+1.  A new, final model is trained using the `best_lr` found in the optimization step.
+2.  The `create_dashboard()` function is then called. This is where the script generates the **7-plot visualization dashboard**. It uses `matplotlib` to create detailed charts that help you visually analyze every aspect of the model's performance, from its learning curve to the distribution of its errors.
+
+
+1.  **Load** the data.
+2.  **Split** it into training and testing sets.
+3.  **Normalize** the features.
+4.  **Train** the model on the training data.
+5.  **Evaluate** its performance on both training and testing data.
+6.  **Optimize** its learning rate.
+7.  **Visualize** the results in a comprehensive dashboard.
